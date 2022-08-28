@@ -9,18 +9,24 @@ import SwiftUI
 
 /// View modifier that allows to react to the view's insertion into the view hierarchy as well as
 /// its removal from the hierarchy.
-///
-/// The events are similar to onWillAppear and onWillDisappear from UIKit
 struct ViewLifecycleModifier: ViewModifier {
-    let onWillAppear: (() -> Void)?
-    let onWillDisappear: (() -> Void)?
+    typealias Action = () -> Void
+    
+    let onWillAppear: Action?
+    let onWillDisappear: Action?
+    let onDidAppear: Action?
+    let onDidDisappear: Action?
     
     init(
-        onWillAppear: (() -> Void)? = nil,
-        onWillDisappear: (() -> Void)? = nil
+        onWillAppear: Action? = nil,
+        onWillDisappear: Action? = nil,
+        onDidAppear: Action? = nil,
+        onDidDisappear: Action? = nil
     ) {
         self.onWillAppear = onWillAppear
         self.onWillDisappear = onWillDisappear
+        self.onDidAppear = onDidAppear
+        self.onDidDisappear = onDidDisappear
     }
 
     func body(content: Content) -> some View {
@@ -28,7 +34,9 @@ struct ViewLifecycleModifier: ViewModifier {
             .background(
                 ViewLifeCycleHelper(
                     onWillAppear: onWillAppear,
-                    onWillDisappear: onWillDisappear
+                    onWillDisappear: onWillDisappear,
+                    onDidAppear: onDidAppear,
+                    onDidDisappear: onDidDisappear
                 )
             )
     }
@@ -44,19 +52,27 @@ private struct ViewLifeCycleHelper: UIViewControllerRepresentable {
 
     let onWillDisappear: (() -> Void)?
     let onWillAppear: (() -> Void)?
+    let onDidAppear: (() -> Void)?
+    let onDidDisappear: (() -> Void)?
 
     init(
         onWillAppear: (() -> Void)? = nil,
-        onWillDisappear: (() -> Void)? = nil
+        onWillDisappear: (() -> Void)? = nil,
+        onDidAppear: (() -> Void)? = nil,
+        onDidDisappear: (() -> Void)? = nil
     ) {
         self.onWillAppear = onWillAppear
         self.onWillDisappear = onWillDisappear
+        self.onDidAppear = onDidAppear
+        self.onDidDisappear = onDidDisappear
     }
 
     func makeCoordinator() -> ViewLifeCycleHelper.Coordinator {
         Coordinator(
             onWillAppear: onWillAppear,
-            onWillDisappear: onWillDisappear
+            onWillDisappear: onWillDisappear,
+            onDidAppear: onDidAppear,
+            onDidDisappear: onDidDisappear
         )
     }
 
@@ -72,15 +88,21 @@ private struct ViewLifeCycleHelper: UIViewControllerRepresentable {
     ) {}
 
     class Coordinator: UIViewController {
-        let onWillDisappear: (() -> Void)?
         let onWillAppear: (() -> Void)?
+        let onWillDisappear: (() -> Void)?
+        let onDidAppear: (() -> Void)?
+        let onDidDisappear: (() -> Void)?
 
         init(
             onWillAppear: (() -> Void)?,
-            onWillDisappear: (() -> Void)?
+            onWillDisappear: (() -> Void)?,
+            onDidAppear: (() -> Void)?,
+            onDidDisappear: (() -> Void)?
         ) {
             self.onWillDisappear = onWillDisappear
             self.onWillAppear = onWillAppear
+            self.onDidAppear = onDidAppear
+            self.onDidDisappear = onDidDisappear
             super.init(nibName: nil, bundle: nil)
         }
 
@@ -97,6 +119,16 @@ private struct ViewLifeCycleHelper: UIViewControllerRepresentable {
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
             onWillAppear?()
+        }
+        
+        override func viewDidAppear(_ animated: Bool) {
+            super.viewDidAppear(animated)
+            onDidAppear?()
+        }
+        
+        override func viewDidDisappear(_ animated: Bool) {
+            super.viewDidDisappear(animated)
+            onDidDisappear?()
         }
     }
 }
